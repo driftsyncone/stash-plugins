@@ -1,0 +1,123 @@
+.vg-root {
+  position: fixed;
+  left: 12px;
+  bottom: 12px;
+  z-index: 1050;
+  font-size: 14px;
+  max-width: calc(100vw - 24px);
+}
+
+.vg-root[hidden] {
+  display: none;
+}
+
+.vg-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 8px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  background: rgba(20, 20, 24, 0.9);
+  color: #eee;
+  cursor: pointer;
+}
+
+.vg-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #888;
+}
+
+.vg-root[data-status="loading"] .vg-dot { background: #e0b020; }
+.vg-root[data-status="ready"] .vg-dot { background: #4a9eff; }
+.vg-root[data-status="playing"] .vg-dot { background: #3ecf6e; }
+.vg-root[data-status="error"] .vg-dot { background: #e5484d; }
+
+.vg-panel {
+  margin-top: 8px;
+  padding: 12px;
+  width: 280px;
+  max-width: 100%;
+  border-radius: 10px;
+  background: rgba(20, 20, 24, 0.95);
+  color: #ddd;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.vg-detail {
+  margin-bottom: 10px;
+  word-break: break-word;
+}
+
+.vg-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.vg-row button {
+  min-height: 36px;
+  padding: 4px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  background: #2a2a30;
+  color: #eee;
+}
+
+.vg-row .vg-stop {
+  background: #7a1f22;
+}
+
+.vg-offset {
+  min-width: 64px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.vg-hint {
+  font-size: 12px;
+  color: #999;
+}
+
+.vg-check {
+  cursor: pointer;
+}
+
+.vg-check input {
+  width: 18px;
+  height: 18px;
+}
+
+.vg-lim {
+  min-width: 80px;
+}
+
+.vg-token {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.vg-token summary {
+  cursor: pointer;
+}
+
+.vg-token-src {
+  color: #999;
+  font-size: 12px;
+}
+
+.vg-token-input {
+  flex: 1;
+  min-width: 0;
+  min-height: 36px;
+  padding: 4px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  background: #111;
+  color: #eee;
+}
