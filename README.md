@@ -38,7 +38,7 @@ Plays a scene's funscript on an [Autoblow VacuGlide](https://autoblow.com/produc
 
 **Requirements**
 
-- Stash v0.25 or newer (uses UI plugin CSP settings).
+- A recent Stash release (tested on v0.31.1).
 - A VacuGlide with online mode set up. Scripts are sent through Autoblow's servers.
 
 ## License
