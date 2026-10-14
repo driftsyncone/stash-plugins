@@ -1,6 +1,17 @@
 (function () {
   "use strict";
 
+  // Stash UI (the "stashui" plugin's interface) loads this file through our assets/stashui.js and sets
+  // window.StashUIHost first. In classic Stash it's undefined and everything works as before.
+  const uiHost = () => window.StashUIHost || null;
+  function pageSceneId() {
+    const h = uiHost();
+    if (h) return h.sceneId();
+    const m = location.pathname.match(/^\/scenes\/(\d+)/);
+    return m ? m[1] : null;
+  }
+  const routeKey = () => (uiHost() ? "stashui:" + uiHost().sceneId() : location.pathname);
+
   const PLUGIN_ID = "vacuglideSync";
   const LATENCY_HOST = "https://latency.autoblowapi.com";
   const TOKEN_TTL_MS = 8 * 24 * 3600 * 1000; // Autoblow keeps uploaded scripts 9 days
@@ -156,7 +167,7 @@
         await api("/vacuglide/sync-script/load-token", {
           method: "PUT", body: { scriptToken: cached.token }, timeoutMs: SLOW_MS,
         });
-        return;
+        return hash;
       } catch (e) {
         /* token expired or rejected: upload again */
       }
@@ -166,6 +177,7 @@
     const d = await api("/vacuglide/sync-script/upload-funscript", { method: "PUT", body: fd, timeoutMs: SLOW_MS });
     const token = d.syncScriptToken || (d.state && d.state.syncScriptToken);
     if (token) store.set(key, { token, hash, at: Date.now() });
+    return hash;
   }
 
   // ---------- per-scene session ----------
@@ -209,7 +221,13 @@
       try {
         await connect();
         setStatus(s, "loading", "loading script (up to 60 s)…");
-        await loadScript(s.sceneId, s.funscriptUrl);
+        const url = s.funscriptUrl;
+        s.loadedHash = await loadScript(s.sceneId, url);
+        if (s.funscriptUrl !== url) {
+          // Interactive Tools switched script while this one was loading: load that instead
+          s.loading = null;
+          return ensureLoaded(s);
+        }
         s.latency = await measureLatency(3);
         store.set("latency", s.latency);
         await applyOffset(s);
@@ -344,6 +362,73 @@
     }, 1200);
   }
 
+  // ---------- suction (air valves) ----------
+  //
+  // Same as the device's Stroking -/+ buttons: stroke-minus lets air out of the sleeve (tighter
+  // suction), stroke-plus lets air in (looser). They are plain open/close switches, so the
+  // buttons hold a valve open while pressed. Every open is closed again: on release, after
+  // VALVE_MAX_MS, on leaving the scene and on closing the tab.
+
+  const VALVE_MIN_MS = 250; // a quick tap still nudges a little
+  const VALVE_MAX_MS = 5000;
+  let valve = null; // the valve currently held open
+  let valveQueue = Promise.resolve(); // valve commands go out strictly in order
+  let valveClosing = Promise.resolve(); // a new press waits for the previous release to finish
+
+  function valveSend(name, open) {
+    const run = () => api("/vacuglide/valve/" + name, { method: "PUT", body: { valveState: open } });
+    valveQueue = valveQueue.catch(() => {}).then(run);
+    return valveQueue;
+  }
+
+  function valveOpen(name) {
+    if (valve) return;
+    const v = { name, openedAt: Date.now() };
+    valve = v;
+    v.timer = setTimeout(() => valveClose(v), VALVE_MAX_MS);
+    v.opening = valveClosing.then(() => (host ? null : connect())).then(() => valveSend(name, true))
+      .then(() => { v.openedAt = Date.now(); });
+    v.opening.catch((e) => flash("suction: " + e.message));
+    render();
+  }
+
+  function valveClose(v = valve) {
+    if (!v || v.closing) return;
+    v.closing = true;
+    clearTimeout(v.timer);
+    if (valve === v) valve = null;
+    render();
+    valveClosing = finishClose(v);
+  }
+
+  async function finishClose(v) {
+    try {
+      await v.opening;
+    } catch (e) {
+      return; // never opened
+    }
+    const wait = VALVE_MIN_MS - (Date.now() - v.openedAt);
+    if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        await valveSend(v.name, false);
+        return;
+      } catch (e) {
+        if (attempt === 2) flash("valve may still be open: press Stop device");
+      }
+    }
+  }
+
+  function closeValvesNow(keepalive) {
+    if (valve) valveClose(valve);
+    if (!host || !token()) return;
+    ["stroke-plus", "stroke-minus"].forEach((name) => fetch(host + "/vacuglide/valve/" + name, {
+      method: "PUT", keepalive: !!keepalive,
+      headers: { "x-device-token": token(), "Content-Type": "application/json" },
+      body: JSON.stringify({ valveState: false }),
+    }).catch(() => {}));
+  }
+
   let flashText = "";
   let flashTimer = null;
 
@@ -361,6 +446,7 @@
     if (!session) return;
     closeEvents();
     clearTimeout(reshapeTimer);
+    if (valve) valveClose(valve);
     if (session.detach) session.detach();
     if (session.status === "playing") stopDevice(false);
     session = null;
@@ -404,6 +490,12 @@
           <span>Speed limit</span>
           <button type="button" data-act="lim" class="vg-lim"></button>
         </div>
+        <div class="vg-row">
+          <span>Suction</span>
+          <button type="button" class="vg-valve" data-valve="stroke-minus" aria-label="Tighter suction, hold">Tighter</button>
+          <button type="button" class="vg-valve" data-valve="stroke-plus" aria-label="Looser suction, hold">Looser</button>
+        </div>
+        <div class="vg-hint">Same as the device's Stroking −/+ buttons: tap for a little, hold for more (max 5 s per press).</div>
         <label class="vg-row vg-check"><input type="checkbox" data-act="buttons"> Device buttons control the video</label>
         <div class="vg-hint">Mode button: play/pause. Speed +/−: intensity. Intensity and speed changes reload the script (about 3 s).</div>
         <div class="vg-row">
@@ -430,6 +522,31 @@
       if (session.status === "idle" || session.status === "error") ensureLoaded(session);
       panelOpen = !panelOpen;
       render();
+    });
+    root.querySelectorAll(".vg-valve").forEach((btn) => {
+      const release = () => valveClose();
+      btn.addEventListener("pointerdown", (e) => {
+        e.preventDefault();
+        if (!session || !token()) return;
+        try {
+          btn.setPointerCapture(e.pointerId);
+        } catch (err) {
+          /* capture unsupported: pointerleave still releases */
+        }
+        valveOpen(btn.dataset.valve);
+      });
+      ["pointerup", "pointercancel", "lostpointercapture", "pointerleave"].forEach((ev) => btn.addEventListener(ev, release));
+      btn.addEventListener("contextmenu", (e) => e.preventDefault()); // long-press menu on phones
+      btn.addEventListener("keydown", (e) => {
+        if ((e.key === " " || e.key === "Enter") && !e.repeat && session && token()) {
+          e.preventDefault();
+          valveOpen(btn.dataset.valve);
+        }
+      });
+      btn.addEventListener("keyup", (e) => {
+        if (e.key === " " || e.key === "Enter") release();
+      });
+      btn.addEventListener("blur", release);
     });
     root.querySelector(".vg-panel").addEventListener("click", async (e) => {
       const act = e.target.dataset && e.target.dataset.act;
@@ -478,6 +595,7 @@
       } else if (act === "stop") {
         if (s.video) s.video.pause();
         stopDevice(false);
+        closeValvesNow(false);
         s.sent = { want: "stop", epoch: s.epoch };
         setStatus(s, s.status === "playing" ? "ready" : s.status);
       }
@@ -492,6 +610,9 @@
       return;
     }
     if (!ui) ui = buildUi();
+    // In Stash UI the badge lives inside the player, so it stays visible in fullscreen and goes with it.
+    const screen = uiHost() && uiHost().player();
+    if (screen && ui.parentElement !== screen) screen.appendChild(ui);
     ui.hidden = false;
     ui.dataset.status = session.status;
     ui.querySelector(".vg-label").textContent = "VacuGlide: " + (flashText || LABELS[session.status]);
@@ -505,7 +626,46 @@
     ui.querySelector(".vg-token-src").textContent = token() ? "(set)" : "(not set)";
     const input = ui.querySelector(".vg-token-input");
     if (document.activeElement !== input) input.value = token();
+    ui.querySelectorAll(".vg-valve").forEach((b) => b.classList.toggle("vg-held", !!valve && valve.name === b.dataset.valve));
     ui.querySelector(".vg-panel").hidden = !panelOpen;
+  }
+
+  // ---------- Stash Interactive Tools ----------
+  //
+  // SIT's script menu (and its modifiers, e.g. Halver) builds the chosen script as a blob: URL
+  // and hands it to Stash's player. Catch those so the VacuGlide plays whatever SIT selected.
+  // Script content is compared, so SIT re-sending the same script doesn't interrupt playback.
+
+  const sitPicks = {}; // sceneId -> { url, hash }
+  const createObjectURL = URL.createObjectURL;
+  URL.createObjectURL = function (obj) {
+    const url = createObjectURL.apply(this, arguments);
+    const m = [null, pageSceneId()];
+    if (m[1] && obj instanceof Blob && obj.type.startsWith("text/plain") && obj.size < 50e6) {
+      obj.text().then((text) => onSitPick(m[1], url, text)).catch(() => {});
+    }
+    return url;
+  };
+
+  function onSitPick(sceneId, url, text) {
+    let fs;
+    try {
+      fs = JSON.parse(text);
+    } catch (e) {
+      return;
+    }
+    if (!fs || !Array.isArray(fs.actions)) return;
+    const hash = hashStr(JSON.stringify(shapeScript(fs, shapeSettings())));
+    sitPicks[sceneId] = { url, hash };
+    const s = session;
+    if (!s || s.sceneId !== sceneId || s.funscriptUrl === url) return;
+    s.funscriptUrl = url;
+    if (hash === s.loadedHash) return; // same script, nothing to reload
+    if (s.status === "ready" || s.status === "playing") { // a load in progress re-checks the URL itself
+      flash("script changed in Interactive Tools: reloading");
+      s.loading = null;
+      ensureLoaded(s);
+    }
   }
 
   // ---------- routing ----------
@@ -513,8 +673,7 @@
   let currentPath = null;
 
   async function onRoute() {
-    const m = location.pathname.match(/^\/scenes\/(\d+)/);
-    const sceneId = m ? m[1] : null;
+    const sceneId = pageSceneId();
     if (session && session.sceneId === sceneId) return;
     endSession();
     if (!sceneId) return;
@@ -526,10 +685,10 @@
       settings = (d.configuration.plugins || {})[PLUGIN_ID] || {};
       const scene = d.findScene;
       if (!scene || !scene.interactive || !scene.paths.funscript) return;
-      if (!location.pathname.startsWith("/scenes/" + sceneId)) return; // navigated away meanwhile
+      if (pageSceneId() !== sceneId) return; // navigated away meanwhile
       // Stash returns an absolute URL; keep only the path so it works over VPN/other hostnames too.
       const u = new URL(scene.paths.funscript, location.href);
-      session = newSession(sceneId, u.pathname + u.search);
+      session = newSession(sceneId, sitPicks[sceneId] ? sitPicks[sceneId].url : u.pathname + u.search);
       render();
       if (settings.autoLoad) ensureLoaded(session);
     } catch (e) {
@@ -538,12 +697,12 @@
   }
 
   function tick() {
-    if (location.pathname !== currentPath) {
-      currentPath = location.pathname;
+    if (routeKey() !== currentPath) {
+      currentPath = routeKey();
       onRoute();
     }
     if (session && !session.video) {
-      const v = document.querySelector(".video-js video, .scene-player-container video, video");
+      const v = uiHost() ? uiHost().video() : document.querySelector(".video-js video, .scene-player-container video, video");
       if (v) attachVideo(session, v);
     } else if (session && session.video && !session.video.isConnected) {
       if (session.detach) session.detach();
@@ -552,11 +711,16 @@
   }
 
   document.addEventListener("visibilitychange", () => {
+    if (document.hidden && valve) valveClose(valve);
     if (!session) return;
     session.epoch++;
     pump(session);
   });
+  window.addEventListener("blur", () => {
+    if (valve) valveClose(valve);
+  });
   window.addEventListener("pagehide", () => {
+    if (valve) closeValvesNow(true);
     if (session && session.status === "playing") stopDevice(true);
   });
 

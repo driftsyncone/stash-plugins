@@ -1,8 +1,10 @@
 name: VacuGlide Sync
 description: Syncs a scene's funscript to an Autoblow VacuGlide through the Autoblow cloud API. Works from any browser, including phones.
-version: 0.3.2
+version: 0.5.1
 url: https://github.com/driftsyncone/stash-plugins#vacuglide-sync
 ui:
+  assets:
+    /: assets
   javascript:
     - vacuglideSync.js
   css:

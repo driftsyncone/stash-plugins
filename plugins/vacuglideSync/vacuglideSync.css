@@ -121,3 +121,30 @@
   background: #111;
   color: #eee;
 }
+
+.vg-valve {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.vg-row .vg-valve.vg-held {
+  background: #4a9eff;
+  border-color: #4a9eff;
+  color: #fff;
+}
+
+/* Stash UI: the badge sits inside the player (top left, under the title bar) instead of the page corner */
+.kb-screen > .vg-root {
+  position: absolute;
+  left: 12px;
+  top: 58px;
+  bottom: auto;
+  z-index: 6;
+  max-width: calc(100% - 24px);
+}
+.kb-screen > .vg-root .vg-panel {
+  max-height: calc(100vh - 140px);
+  overflow-y: auto;
+}
