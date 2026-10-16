@@ -15,6 +15,12 @@ All four work in classic Stash and in the [Stash UI](https://github.com/anonym88
 interface, and follow the script you pick in
 [Stash Interactive Tools](https://github.com/stashapp/CommunityScripts).
 
+| Desktop: Stroke Graph, Beat Bar and the VacuGlide badge | Phone |
+|---|---|
+| ![Player with Stroke Graph, Beat Bar and VacuGlide badge](docs/player.png) | ![Phone layout](docs/phone.png) |
+
+<sub>Screenshots from Stash UI with its NSFW mode blurring the video.</sub>
+
 ## Install
 
 1. In Stash, open **Settings → Plugins → Available Plugins → Add Source**.
@@ -38,6 +44,8 @@ Plays a scene's funscript on an Autoblow VacuGlide in sync with the video, from 
 2. Hold the device's mode button for 2.5 s to enter online mode.
 3. Open any scene that has a funscript and tap the **VacuGlide** badge (bottom left; top left of the player in Stash UI). Expand **Device token**, paste your token, and click **Save**.
 4. Press play.
+
+![VacuGlide Sync panel](docs/vacuglide-panel.png)
 
 **Features**
 
@@ -63,6 +71,8 @@ A **Beat Script** button in the top bar opens a page where you paste a video lin
 - **Beat bar** videos (cock hero / fap hero): it finds the on-screen bar and times one stroke per marker, the way commercial FULL / HALF scripts are made.
 - **Music** otherwise: beat tracking on the soundtrack, stroke depth follows loudness.
 - **Auto** picks the bar when there is one, else music.
+
+![Beat Script page](docs/beat-script.png)
 
 Every run saves the variants side by side (`<video> Beat Bar FULL.funscript`, `… HALF`, `… Music`, …) so you can switch in Stash Interactive Tools; the one you choose becomes the scene's script. Scripts made by Beat Script are tagged "Beat script (auto)" and carry the beat times Beat Bar uses.
 
