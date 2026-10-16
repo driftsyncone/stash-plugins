@@ -194,7 +194,7 @@
     root = document.createElement("div");
     root.className = "bb-root";
     canvas = document.createElement("canvas");
-    canvas.className = "bb-canvas";
+    canvas.className = "bb-canvas kb-nsfw-keep"; // a drawing, not media: Stash UI's NSFW blur must skip it
     ctx = canvas.getContext("2d");
     toggle = document.createElement("button");
     toggle.type = "button";

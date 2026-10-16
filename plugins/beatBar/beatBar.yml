@@ -1,6 +1,6 @@
 name: Beat Bar
 description: Draws a fap-hero style beat bar over PMVs that don't have one, timed from the scene's beat script. Themeable.
-version: 0.3.4
+version: 0.3.5
 ui:
   assets:
     /: assets

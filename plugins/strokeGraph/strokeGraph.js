@@ -180,7 +180,7 @@
     root = document.createElement("div");
     root.className = "sg-root";
     canvas = document.createElement("canvas");
-    canvas.className = "sg-canvas";
+    canvas.className = "sg-canvas kb-nsfw-keep"; // a drawing, not media: Stash UI's NSFW blur must skip it
     ctx = canvas.getContext("2d");
     const tools = document.createElement("div");
     tools.className = "sg-tools";
