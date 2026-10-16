@@ -1,0 +1,52 @@
+name: Beat Script
+description: Paste a video link (or pick a scene) to get a funscript that strokes to the beat, following an on-screen beat bar when the video has one (cock hero / fap hero) or the music otherwise. Made for PMVs and cock hero videos.
+version: 0.7.1
+exec:
+  - python
+  - "{pluginDir}/beat_script.py"
+interface: raw
+ui:
+  assets:
+    /: assets
+  javascript:
+    - beatScript.js
+  css:
+    - beatScript.css
+tasks:
+  - name: Download and script
+    description: Started from the Beat Script button in the top bar, where you paste a link.
+    defaultArgs:
+      mode: download
+  - name: Finalize
+    description: Internal step that runs automatically after the scan. Sets the scene's title, link, cover and tag; PMVHaven videos also get their tags, performers and details via FapTap Import.
+    defaultArgs:
+      mode: finalize
+  - name: Script a scene
+    description: Started from the Beat Script page with a scene number.
+    defaultArgs:
+      mode: scene
+settings:
+  downloadDir:
+    displayName: Download folder
+    description: Folder inside a Stash library path, as Stash sees it. Default /data/PMV
+    type: STRING
+  maxHeight:
+    displayName: Max video quality
+    description: Highest video height to download, e.g. 1080. Empty or 0 = best available.
+    type: NUMBER
+  minAmplitude:
+    displayName: Stroke depth in quiet parts
+    description: 0-100. Loud parts always use full depth. Default 50.
+    type: NUMBER
+  maxSpeed:
+    displayName: Max speed
+    description: Funscript units per second; faster beats get shorter strokes. Music scripts default to 400. Beat bar scripts are uncapped full strokes when empty, like commercial FULL scripts; for a Handy 1 use about 585 (500 mm/s), Handy 2 about 935 (800 mm/s).
+    type: NUMBER
+  minStrokeMs:
+    displayName: Shortest stroke (ms)
+    description: Beats closer together than this are skipped, so very fast songs play at half time. Default 250.
+    type: NUMBER
+  tagName:
+    displayName: Tag for generated scripts
+    description: Added to every scene this plugin scripts, so you can tell them apart from hand-made ones. Default "Beat script (auto)".
+    type: STRING

@@ -1,6 +1,6 @@
 name: VacuGlide Sync
 description: Syncs a scene's funscript to an Autoblow VacuGlide through the Autoblow cloud API. Works from any browser, including phones.
-version: 0.5.1
+version: 0.6.5
 url: https://github.com/driftsyncone/stash-plugins#vacuglide-sync
 ui:
   assets:
@@ -17,6 +17,10 @@ settings:
     displayName: Device token
     description: Shown on the VacuGlide during Autoblow online setup. Can also be set from the VacuGlide panel on any scene.
     type: STRING
+  hideBadge:
+    displayName: Hide the VacuGlide badge
+    description: On = no VacuGlide badge and no syncing on any scene (the badge's "Hide VacuGlide" button turns this on). Turn off to bring it back.
+    type: BOOLEAN
   autoLoad:
     displayName: Load script when a scene opens
     description: Off = load on first play or when you tap the VacuGlide badge. Loading can take up to 60 s the first time per scene.

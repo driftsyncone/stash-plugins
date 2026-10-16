@@ -148,3 +148,23 @@
   max-height: calc(100vh - 140px);
   overflow-y: auto;
 }
+
+/* Stash UI on a phone held upright: pinned to the screen's bottom-left corner, above Stash UI's player */
+.vg-root.vg-pinned {
+  position: fixed;
+  left: 12px;
+  bottom: 12px;
+  top: auto;
+  z-index: 1060;
+}
+/* the badge stays in the corner; the panel opens above it */
+.vg-root.vg-pinned:not([hidden]) {
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: flex-start;
+}
+.vg-root.vg-pinned .vg-panel {
+  margin: 0 0 8px;
+  max-height: calc(100vh - 90px);
+  overflow-y: auto;
+}

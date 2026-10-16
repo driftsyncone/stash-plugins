@@ -69,9 +69,14 @@
   }
 
   async function saveToken(value) {
+    return saveSettings({ deviceToken: value });
+  }
+
+  // Stash replaces a plugin's settings as a whole: read them fresh, change the given keys, write all back.
+  async function saveSettings(patch) {
     const d = await stashGql("{ configuration { plugins } }");
     const current = (d.configuration.plugins || {})[PLUGIN_ID] || {};
-    const next = Object.assign({}, current, { deviceToken: value });
+    const next = Object.assign({}, current, patch);
     await stashGql("mutation($i: Map!) { configurePlugin(plugin_id: \"" + PLUGIN_ID + "\", input: $i) }", { i: next });
     settings = next;
   }
@@ -200,6 +205,7 @@
 
   function setStatus(s, status, detail = "") {
     if (s !== session) return;
+    if (status === "playing" && s.status !== "playing") lastPulse = Date.now();
     s.status = status;
     s.detail = detail;
     render();
@@ -381,14 +387,23 @@
     return valveQueue;
   }
 
-  function valveOpen(name) {
+  // pulseMs: an automatic suction pulse, closed pulseMs after the valve really opened. Without it
+  // the valve is a held button, closed on release or after VALVE_MAX_MS.
+  function valveOpen(name, pulseMs) {
+    if (valve && valve.pulse && !pulseMs) valveClose(valve); // a press takes over from a pulse
     if (valve) return;
-    const v = { name, openedAt: Date.now() };
+    const v = { name, pulse: pulseMs || 0, openedAt: Date.now() };
     valve = v;
-    v.timer = setTimeout(() => valveClose(v), VALVE_MAX_MS);
+    if (!v.pulse) v.timer = setTimeout(() => valveClose(v), VALVE_MAX_MS);
     v.opening = valveClosing.then(() => (host ? null : connect())).then(() => valveSend(name, true))
-      .then(() => { v.openedAt = Date.now(); });
-    v.opening.catch((e) => flash("suction: " + e.message));
+      .then(() => {
+        v.openedAt = Date.now();
+        if (v.pulse && !v.closing) v.timer = setTimeout(() => valveClose(v), v.pulse);
+      });
+    v.opening.catch((e) => {
+      flash("suction: " + e.message);
+      if (v.pulse) valveClose(v);
+    });
     render();
   }
 
@@ -397,6 +412,7 @@
     v.closing = true;
     clearTimeout(v.timer);
     if (valve === v) valve = null;
+    if (!v.pulse && v.name === "stroke-minus") lastPulse = Date.now(); // just tightened by hand
     render();
     valveClosing = finishClose(v);
   }
@@ -407,7 +423,7 @@
     } catch (e) {
       return; // never opened
     }
-    const wait = VALVE_MIN_MS - (Date.now() - v.openedAt);
+    const wait = (v.pulse || VALVE_MIN_MS) - (Date.now() - v.openedAt);
     if (wait > 0) await new Promise((r) => setTimeout(r, wait));
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
@@ -427,6 +443,32 @@
       headers: { "x-device-token": token(), "Content-Type": "application/json" },
       body: JSON.stringify({ valveState: false }),
     }).catch(() => {}));
+  }
+
+  // ---------- suction maintenance ----------
+  //
+  // Starting a sync script closes both valves, so suction slowly leaks during a scene. Autoblow's
+  // own app tops it up with short stroke-minus pulses at these levels (pulse ms, every ms); same
+  // here, only while the script is playing.
+
+  const SUCTION_LEVELS = [
+    null,
+    { name: "Low", pulse: 350, every: 15000 },
+    { name: "Medium", pulse: 400, every: 10000 },
+    { name: "High", pulse: 450, every: 8000 },
+  ];
+  let lastPulse = 0;
+
+  function suctionLevel() {
+    return clamp(store.get("suction", 0), 0, SUCTION_LEVELS.length - 1);
+  }
+
+  function suctionTick() {
+    const lv = SUCTION_LEVELS[suctionLevel()];
+    if (!lv || !session || session.status !== "playing" || valve) return;
+    if (Date.now() - lastPulse < lv.every) return;
+    lastPulse = Date.now();
+    valveOpen("stroke-minus", lv.pulse);
   }
 
   let flashText = "";
@@ -496,12 +538,21 @@
           <button type="button" class="vg-valve" data-valve="stroke-plus" aria-label="Looser suction, hold">Looser</button>
         </div>
         <div class="vg-hint">Same as the device's Stroking −/+ buttons: tap for a little, hold for more (max 5 s per press).</div>
+        <div class="vg-row">
+          <span>Keep suction</span>
+          <button type="button" data-act="suction" class="vg-suction"></button>
+        </div>
+        <div class="vg-hint">Tops up suction while the script plays, like Autoblow's app: a short Tighter pulse every 15 s (Low), 10 s (Medium) or 8 s (High).</div>
         <label class="vg-row vg-check"><input type="checkbox" data-act="buttons"> Device buttons control the video</label>
         <div class="vg-hint">Mode button: play/pause. Speed +/−: intensity. Intensity and speed changes reload the script (about 3 s).</div>
         <div class="vg-row">
           <button type="button" data-act="load">Reload script</button>
           <button type="button" data-act="stop" class="vg-stop">Stop device</button>
         </div>
+        <div class="vg-row">
+          <button type="button" data-act="hide">Hide VacuGlide</button>
+        </div>
+        <div class="vg-hint">Stops the device and takes the badge away on every scene. Bring it back from VacuGlide in Stash UI's menu or the player's ⚙ menu (or Settings → Plugins → VacuGlide Sync).</div>
         <details class="vg-token">
           <summary>Device token <span class="vg-token-src"></span></summary>
           <div class="vg-row">
@@ -524,7 +575,9 @@
       render();
     });
     root.querySelectorAll(".vg-valve").forEach((btn) => {
-      const release = () => valveClose();
+      const release = () => {
+        if (valve && !valve.pulse) valveClose();
+      };
       btn.addEventListener("pointerdown", (e) => {
         e.preventDefault();
         if (!session || !token()) return;
@@ -584,6 +637,10 @@
         const i = SPEED_LIMITS.indexOf(shapeSettings().speedLimit);
         store.set("speedLimit", SPEED_LIMITS[(i + 1) % SPEED_LIMITS.length]);
         scheduleReshape();
+      } else if (act === "suction") {
+        store.set("suction", (suctionLevel() + 1) % SUCTION_LEVELS.length);
+        lastPulse = Date.now();
+        render();
       } else if (act === "buttons") {
         store.set("buttons", e.target.checked);
         if (e.target.checked && (s.status === "ready" || s.status === "playing")) openEvents(s);
@@ -592,6 +649,15 @@
         s.loading = null;
         store.set("script:" + s.sceneId, null);
         ensureLoaded(s);
+      } else if (act === "hide") {
+        if (s.video) s.video.pause();
+        stopDevice(false);
+        closeValvesNow(false);
+        panelOpen = false;
+        endSession();
+        saveSettings({ hideBadge: true })
+          .then(() => window.dispatchEvent(new Event("vacuglide:hidden"))) // Stash UI's page and menu repaint
+          .catch((err) => console.warn("[vacuglideSync] couldn't save hideBadge", err));
       } else if (act === "stop") {
         if (s.video) s.video.pause();
         stopDevice(false);
@@ -610,9 +676,11 @@
       return;
     }
     if (!ui) ui = buildUi();
-    // In Stash UI the badge lives inside the player, so it stays visible in fullscreen and goes with it.
-    const screen = uiHost() && uiHost().player();
-    if (screen && ui.parentElement !== screen) screen.appendChild(ui);
+    // In Stash UI the badge lives inside the player, so it stays visible in fullscreen and goes with it – except on
+    // a phone held upright, where it's pinned to the screen's bottom-left corner instead of covering the video.
+    const where = uiHome();
+    if (where && ui.parentElement !== where) where.appendChild(ui);
+    ui.classList.toggle("vg-pinned", !!uiHost() && where === document.body);
     ui.hidden = false;
     ui.dataset.status = session.status;
     ui.querySelector(".vg-label").textContent = "VacuGlide: " + (flashText || LABELS[session.status]);
@@ -626,7 +694,9 @@
     ui.querySelector(".vg-token-src").textContent = token() ? "(set)" : "(not set)";
     const input = ui.querySelector(".vg-token-input");
     if (document.activeElement !== input) input.value = token();
-    ui.querySelectorAll(".vg-valve").forEach((b) => b.classList.toggle("vg-held", !!valve && valve.name === b.dataset.valve));
+    ui.querySelectorAll(".vg-valve").forEach((b) => b.classList.toggle("vg-held", !!valve && !valve.pulse && valve.name === b.dataset.valve));
+    const lv = SUCTION_LEVELS[suctionLevel()];
+    ui.querySelector(".vg-suction").textContent = lv ? lv.name : "Off";
     ui.querySelector(".vg-panel").hidden = !panelOpen;
   }
 
@@ -683,6 +753,7 @@
         { id: sceneId },
       );
       settings = (d.configuration.plugins || {})[PLUGIN_ID] || {};
+      if (settings.hideBadge) return; // hidden on purpose: no badge, no syncing
       const scene = d.findScene;
       if (!scene || !scene.interactive || !scene.paths.funscript) return;
       if (pageSceneId() !== sceneId) return; // navigated away meanwhile
@@ -696,7 +767,19 @@
     }
   }
 
+  // Stash UI: on a phone held upright (its docked()) the screen's corner, otherwise the picture
+  function uiHome() {
+    const h = uiHost();
+    if (!h) return null;
+    return h.docked && h.docked() ? document.body : h.player();
+  }
+
   function tick() {
+    suctionTick();
+    if (session && ui && uiHost()) { // phone turned, fullscreen: move along
+      const where = uiHome();
+      if (where && ui.parentElement !== where) render();
+    }
     if (routeKey() !== currentPath) {
       currentPath = routeKey();
       onRoute();
@@ -709,6 +792,27 @@
       session.video = null; // player re-rendered; re-attach on next tick
     }
   }
+
+  // Stash UI's VacuGlide page and gear menu (assets/stashui.js) change hideBadge and then say so: follow at once.
+  window.addEventListener("vacuglide:settings", async () => {
+    try {
+      const d = await stashGql("{ configuration { plugins } }");
+      settings = (d.configuration.plugins || {})[PLUGIN_ID] || {};
+    } catch (e) {
+      return;
+    }
+    if (settings.hideBadge) {
+      if (session) {
+        if (session.video) session.video.pause();
+        stopDevice(false);
+        closeValvesNow(false);
+        panelOpen = false;
+        endSession();
+      }
+    } else if (!session) {
+      currentPath = null; // the next tick sees the scene again and brings the badge back
+    }
+  });
 
   document.addEventListener("visibilitychange", () => {
     if (document.hidden && valve) valveClose(valve);

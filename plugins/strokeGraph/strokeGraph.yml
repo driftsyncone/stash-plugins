@@ -1,0 +1,10 @@
+name: Stroke Graph
+description: Draws the scene's funscript as a moving stroke line over the bottom of the player, coloured by speed. Follows the script picked in Stash Interactive Tools.
+version: 0.2.8
+ui:
+  assets:
+    /: assets
+  javascript:
+    - strokeGraph.js
+  css:
+    - strokeGraph.css

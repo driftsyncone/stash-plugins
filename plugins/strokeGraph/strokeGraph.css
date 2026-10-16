@@ -1,0 +1,54 @@
+.sg-root {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  pointer-events: none;
+  transition: bottom 0.2s;
+}
+.sg-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.55) 35%);
+}
+.sg-root.sg-collapsed .sg-canvas {
+  display: none;
+}
+.sg-tools {
+  position: absolute;
+  top: 2px;
+  left: 6px; /* left side: Firefox's picture-in-picture toggle sits on the right edge of videos */
+  display: flex;
+  gap: 4px;
+  pointer-events: auto;
+}
+.sg-root.sg-collapsed .sg-tools {
+  top: auto;
+  bottom: 4px;
+}
+.sg-btn {
+  font: 600 11px/1 system-ui, sans-serif;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 4px;
+  padding: 3px 6px;
+  cursor: pointer;
+}
+.sg-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+.sg-select {
+  max-width: 190px;
+  padding: 2px 4px;
+}
+.sg-select option {
+  color: #000;
+}
+
+/* Stash UI on a phone held upright: the buttons sit in the strip under the picture (the graph stays on it) */
+.sui-dock > .sg-tools {
+  position: static;
+}

@@ -1,0 +1,65 @@
+.bb-root {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  pointer-events: none;
+  transition: bottom 0.2s;
+}
+.bb-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.bb-root.bb-collapsed .bb-canvas {
+  display: none;
+}
+.bb-tools {
+  position: absolute;
+  left: 6px;
+  top: 3px;
+  display: flex;
+  gap: 4px;
+  pointer-events: auto;
+}
+.bb-root.bb-collapsed .bb-tools {
+  top: auto;
+  bottom: 4px;
+}
+.bb-toggle {
+  font: 600 11px/1 system-ui, sans-serif;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 4px;
+  padding: 3px 6px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.bb-root:hover .bb-toggle,
+.bb-root.bb-collapsed .bb-toggle,
+.video-js:not(.vjs-user-inactive) .bb-toggle {
+  opacity: 1;
+}
+.bb-flash {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0;
+}
+.bb-root.bb-top .bb-tools {
+  top: auto;
+  bottom: -22px;
+}
+
+/* Stash UI on a phone held upright: the buttons sit in the strip under the picture (the bar stays on it), always
+   shown – a touch screen has no hover */
+.sui-dock > .bb-tools {
+  position: static;
+}
+.sui-dock > .bb-tools .bb-toggle {
+  opacity: 1;
+}

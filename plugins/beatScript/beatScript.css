@@ -1,0 +1,269 @@
+.bs-page {
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+.bs-input-row {
+  display: flex;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.bs-input-row input {
+  flex: 1;
+  min-width: 0;
+}
+
+.bs-error {
+  margin: 10px 0;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: rgba(229, 72, 77, 0.15);
+  color: #ff9a9d;
+}
+
+.bs-card {
+  display: flex;
+  gap: 16px;
+  margin-top: 12px;
+  padding: 14px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.bs-thumb {
+  width: 260px;
+  max-width: 40%;
+  align-self: flex-start;
+  border-radius: 6px;
+  object-fit: cover;
+}
+
+.bs-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.bs-info h3 {
+  margin: 0 0 4px;
+  font-size: 1.25rem;
+}
+
+.bs-meta {
+  color: #aaa;
+  font-size: 0.9rem;
+}
+
+.bs-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0;
+}
+
+.bs-tags span {
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  font-size: 0.8rem;
+}
+
+.bs-checks {
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bs-check {
+  display: flex;
+  gap: 8px;
+  margin: 4px 0;
+  word-break: break-word;
+}
+
+.bs-icon {
+  flex: 0 0 18px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.bs-ok .bs-icon { color: #3ecf6e; }
+.bs-warn .bs-icon { color: #e0b020; }
+.bs-bad .bs-icon { color: #e5484d; }
+
+.bs-actions {
+  margin: 16px 0;
+}
+
+.bs-progress-box {
+  padding: 14px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.bs-phase {
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.bs-progress-box .progress {
+  height: 14px;
+}
+
+.bs-speed {
+  margin-top: 6px;
+  color: #aaa;
+  font-variant-numeric: tabular-nums;
+}
+
+.bs-open {
+  margin-top: 12px;
+}
+
+.bs-log {
+  margin: 12px 0 0;
+  padding-left: 18px;
+  color: #bbb;
+  font-size: 0.85rem;
+}
+
+@media (max-width: 600px) {
+  .bs-card {
+    flex-direction: column;
+  }
+
+  .bs-thumb {
+    width: 100%;
+    max-width: 100%;
+  }
+}
+
+.bs-jobs {
+  margin-top: 20px;
+}
+
+.bs-jobs-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.bs-jobs-head h4 {
+  margin: 0;
+}
+
+.bs-job-list {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bs-job {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+  padding: 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.bs-job-thumb {
+  width: 96px;
+  height: 54px;
+  flex: 0 0 96px;
+  border-radius: 4px;
+  object-fit: cover;
+}
+
+.bs-job-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.bs-job-title {
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bs-job-status {
+  margin: 2px 0 6px;
+  color: #aaa;
+  font-size: 0.85rem;
+  word-break: break-word;
+}
+
+.bs-job .progress {
+  height: 8px;
+}
+
+.bs-job-actions {
+  display: flex;
+  gap: 6px;
+}
+
+@media (max-width: 600px) {
+  .bs-job-thumb {
+    width: 64px;
+    height: 36px;
+    flex-basis: 64px;
+  }
+}
+
+.bs-help {
+  margin-top: 24px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.bs-help summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.bs-help ol {
+  margin: 10px 0 0;
+  padding-left: 20px;
+}
+
+.bs-help li {
+  margin: 6px 0;
+}
+
+.bs-lead {
+  color: #aaa;
+}
+
+.bs-scene-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 18px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.bs-scene-row input.form-control {
+  width: 200px;
+}
+
+.bs-scene-row label {
+  margin: 0;
+}
+
+.bs-method-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 4px;
+}
+
+.bs-method-row select.form-control {
+  width: auto;
+  max-width: 100%;
+}

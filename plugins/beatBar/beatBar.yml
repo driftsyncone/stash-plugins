@@ -1,0 +1,61 @@
+name: Beat Bar
+description: Draws a fap-hero style beat bar over PMVs that don't have one, timed from the scene's beat script. Themeable.
+version: 0.3.4
+ui:
+  assets:
+    /: assets
+  javascript:
+    - beatBar.theme.classic.js
+    - beatBar.theme.angular.js
+    - beatBar.theme.neon.js
+    - beatBar.theme.minimal.js
+    - beatBar.theme.approach.js
+    - beatBar.theme.heartbeat.js
+    - beatBar.js
+  css:
+    - beatBar.css
+settings:
+  showTags:
+    displayName: Show on scenes tagged
+    description: Comma-separated. Empty = "PMV, HMV, Beat script (auto)". The scene also needs a funscript.
+    type: STRING
+  skipTags:
+    displayName: Never on scenes tagged
+    description: Comma-separated, for videos that already have a bar. Empty = "Beat meter, Fap Hero, Cock Hero".
+    type: STRING
+  theme:
+    displayName: Theme
+    description: Default look - classic, angular, neon, minimal, approach or heartbeat. The Theme button on the bar overrides it per browser. Empty = classic.
+    type: STRING
+  position:
+    displayName: Position
+    description: '"bottom" (above the seek bar) or "top" of the video. Empty = bottom.'
+    type: STRING
+  size:
+    displayName: Size (%)
+    description: Bar height, 40-250. Empty = 100.
+    type: NUMBER
+  lookahead:
+    displayName: Look-ahead (seconds)
+    description: How early markers appear, which also sets how fast they move. Empty = the theme's own (about 2 s).
+    type: NUMBER
+  offsetMs:
+    displayName: Timing offset (ms)
+    description: Positive shows beats later, negative earlier. Empty = 0.
+    type: NUMBER
+  opacity:
+    displayName: Opacity (%)
+    description: 10-100. Empty = 100.
+    type: NUMBER
+  beatFlash:
+    displayName: Beat flash
+    description: Soft glow around the edge of the video on every beat.
+    type: BOOLEAN
+  hideBpm:
+    displayName: Hide BPM
+    description: Don't show the current tempo on the bar.
+    type: BOOLEAN
+  noTempoColors:
+    displayName: No tempo colours
+    description: Keep markers one colour instead of heating up in fast sections.
+    type: BOOLEAN

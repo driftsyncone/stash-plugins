@@ -8,11 +8,22 @@
 //   window.StashUIHost.video()          the <video>
 //   window.StashUIHost.controlsHidden() true while the player's controls are faded out
 //   window.StashUIHost.controlsHeight() px the controls take at the bottom of the picture (0 when hidden)
+//   window.StashUIHost.docked()         true on a phone held upright and not fullscreen
+//   window.StashUIHost.dock()           then: a strip under the picture (.sui-dock) for our buttons, so they're
+//                                       out of the way of the player's seek bar (the overlays stay on the picture);
+//                                       otherwise null
+//   window.StashUIHost.home()           (older plugin versions) the strip when docked, else the picture
 // and hands over the funscript picked in Stash UI's player (its variants) the way Stash Interactive Tools
 // does in classic Stash: as a text/plain blob: URL, which the plugins already listen for.
 // Classic Stash never loads this file, so nothing changes there.
 
-const VERSION = 1;
+const VERSION = 3;
+// Phones held upright: the picture is small, so overlays go in a strip under it instead (see home()).
+const DOCK_MQ = "(max-width: 700px) and (orientation: portrait)";
+const DOCK_CSS = `
+.sui-dock { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 6px 8px; background: #000; }
+.sui-dock:empty { display: none; }
+.sui-dock > .sg-tools { order: 1; } .sui-dock > .bb-tools { order: 2; }`;
 const POLL_MS = 2000;
 
 async function gql(query, variables) {
@@ -46,7 +57,27 @@ export function installHost() {
       const c = s && s.querySelector(".kb-controls");
       return c && !s.classList.contains("is-idle") ? c.offsetHeight : 0;
     },
+    docked: () => !!stage() && matchMedia(DOCK_MQ).matches && !document.fullscreenElement,
+    dock: () => (host.docked() ? host.home() : null),
+    home: () => {
+      const screen = host.player();
+      if (!screen) return null;
+      if (!host.docked()) return screen;
+      let dock = screen.parentElement.querySelector(":scope > .sui-dock");
+      if (!dock) {
+        dock = document.createElement("div");
+        dock.className = "sui-dock";
+        screen.after(dock);
+      }
+      return dock;
+    },
   };
+  if (!document.getElementById("sui-dock-css")) {
+    const st = document.createElement("style");
+    st.id = "sui-dock-css";
+    st.textContent = DOCK_CSS;
+    document.head.appendChild(st);
+  }
   window.StashUIHost = host;
 
   // ---- the script picked in Stash UI's player ----
