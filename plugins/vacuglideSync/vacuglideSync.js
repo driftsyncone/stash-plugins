@@ -370,11 +370,16 @@
 
   // ---------- suction (air valves) ----------
   //
-  // Same as the device's Stroking -/+ buttons: stroke-minus lets air out of the sleeve (tighter
-  // suction), stroke-plus lets air in (looser). They are plain open/close switches, so the
+  // As the real VacuGlide behaves (user test on the device, 0.6.6): Tighter is the API's stroke-plus
+  // valve (air out of the sleeve, more suction), Looser is stroke-minus (air in). Until 0.6.6 this
+  // followed the manual's reading (Tighter = stroke-minus), which the device does the other way
+  // round, so the buttons were reversed and keep-suction pulses were loosening. VALVE_TIGHTER /
+  // VALVE_LOOSER are the only place the names are decided. They are plain open/close switches, so the
   // buttons hold a valve open while pressed. Every open is closed again: on release, after
   // VALVE_MAX_MS, on leaving the scene and on closing the tab.
 
+  const VALVE_TIGHTER = "stroke-plus"; // air out, more suction
+  const VALVE_LOOSER = "stroke-minus"; // air in, less suction
   const VALVE_MIN_MS = 250; // a quick tap still nudges a little
   const VALVE_MAX_MS = 5000;
   let valve = null; // the valve currently held open
@@ -412,7 +417,7 @@
     v.closing = true;
     clearTimeout(v.timer);
     if (valve === v) valve = null;
-    if (!v.pulse && v.name === "stroke-minus") lastPulse = Date.now(); // just tightened by hand
+    if (!v.pulse && v.name === VALVE_TIGHTER) lastPulse = Date.now(); // just tightened by hand
     render();
     valveClosing = finishClose(v);
   }
@@ -448,7 +453,7 @@
   // ---------- suction maintenance ----------
   //
   // Starting a sync script closes both valves, so suction slowly leaks during a scene. Autoblow's
-  // own app tops it up with short stroke-minus pulses at these levels (pulse ms, every ms); same
+  // own app tops it up with short Tighter (stroke-plus) pulses at these levels (pulse ms, every ms); same
   // here, only while the script is playing.
 
   const SUCTION_LEVELS = [
@@ -468,7 +473,7 @@
     if (!lv || !session || session.status !== "playing" || valve) return;
     if (Date.now() - lastPulse < lv.every) return;
     lastPulse = Date.now();
-    valveOpen("stroke-minus", lv.pulse);
+    valveOpen(VALVE_TIGHTER, lv.pulse);
   }
 
   let flashText = "";
@@ -534,10 +539,10 @@
         </div>
         <div class="vg-row">
           <span>Suction</span>
-          <button type="button" class="vg-valve" data-valve="stroke-minus" aria-label="Tighter suction, hold">Tighter</button>
-          <button type="button" class="vg-valve" data-valve="stroke-plus" aria-label="Looser suction, hold">Looser</button>
+          <button type="button" class="vg-valve" data-valve="${VALVE_TIGHTER}" aria-label="Tighter suction, hold">Tighter</button>
+          <button type="button" class="vg-valve" data-valve="${VALVE_LOOSER}" aria-label="Looser suction, hold">Looser</button>
         </div>
-        <div class="vg-hint">Same as the device's Stroking −/+ buttons: tap for a little, hold for more (max 5 s per press).</div>
+        <div class="vg-hint">Tighter lets air out (more suction), Looser lets air in: tap for a little, hold for more (max 5 s per press).</div>
         <div class="vg-row">
           <span>Keep suction</span>
           <button type="button" data-act="suction" class="vg-suction"></button>

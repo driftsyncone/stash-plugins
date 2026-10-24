@@ -53,7 +53,7 @@ Plays a scene's funscript on an Autoblow VacuGlide in sync with the video, from 
 - Network latency is measured and compensated automatically, plus a manual offset (±50 ms steps).
 - **Intensity** (20–200%) and a **speed limit** (500/400/300/200 per second) reshape the script for a gentler or stronger feel.
 - **Device buttons**: the mode button plays/pauses the video, speed +/− change intensity.
-- **Suction**: hold **Tighter** / **Looser** in the panel, same as the device's Stroking −/+ buttons (max 5 s per press). **Keep suction** (Off/Low/Med/High) tops it up automatically while a script plays.
+- **Suction**: hold **Tighter** / **Looser** in the panel (Tighter lets air out for more suction, Looser lets air in; max 5 s per press). **Keep suction** (Off/Low/Med/High) tops it up automatically while a script plays.
 - Follows the script you pick in Stash Interactive Tools (Interactive tab, including its modifiers) and in the Stash UI player; the device reloads only when the script actually changes.
 - Stash UI: its own sidebar page and a toggle in the player menu. On phones the badge sits where it doesn't cover the controls.
 - **Hide the VacuGlide badge** setting (or the badge's own Hide button) turns it off everywhere.
